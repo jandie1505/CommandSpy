@@ -68,25 +68,12 @@ public class CommandSpy extends Plugin implements Listener {
         this.cachedPlayers = null;
     }
 
-    public void updateSpyingPlayer(UUID playerId, SpyData spyData) {
-
-        if (playerId == null) {
-            return;
-        }
-
-        if (spyData == null) {
-            this.spyingPlayers.remove(playerId);
-            return;
-        }
-
-        this.spyingPlayers.put(playerId, spyData);
-    }
-
     public SpyData getSpyData(UUID playerId) {
         SpyData spyData = this.spyingPlayers.get(playerId);
 
         if (spyData == null) {
-            return new SpyData();
+            spyData = new SpyData();
+            this.spyingPlayers.put(playerId, spyData);
         }
 
         return spyData;
