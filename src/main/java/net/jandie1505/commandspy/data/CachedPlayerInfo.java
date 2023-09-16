@@ -1,4 +1,4 @@
-package net.jandie1505.commandspy;
+package net.jandie1505.commandspy.data;
 
 import java.util.UUID;
 

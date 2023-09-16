@@ -1,6 +1,8 @@
 package net.jandie1505.commandspy;
 
 import net.jandie1505.commandspy.commands.SpyCommand;
+import net.jandie1505.commandspy.data.CachedPlayerInfo;
+import net.jandie1505.commandspy.data.SpyData;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
