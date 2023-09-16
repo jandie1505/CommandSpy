@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class CommandSpy extends Plugin {
+    private String proxyName;
     private JSONObject config;
     private Map<UUID, SpyData> spyingPlayers;
 
@@ -68,7 +69,23 @@ public class CommandSpy extends Plugin {
         return spyData;
     }
 
-    public void spyEvent(final boolean external, final int type, final boolean command, final boolean proxyCommand, final boolean cancelled, final String serverName, final UUID sender, final String senderName, final String message) {
+    /**
+     * Spy event.
+     * This method will be called by the event listener or the redis system.
+     * @param proxyName Name of the proxy (null for this proxy)
+     * @param command If the event is a command
+     * @param proxyCommand If the event is a valid proxy command
+     * @param cancelled If the event has been cancelled
+     * @param serverName The server name (not null)
+     * @param sender The uuid of the sender (not null)
+     * @param senderName The name of the sender (can be null)
+     * @param message The message (not null)
+     */
+    public void spyEvent(final String proxyName, final boolean command, final boolean proxyCommand, final boolean cancelled, final String serverName, final UUID sender, final String senderName, final String message) {
+
+        if (serverName == null || sender == null || message == null) {
+            return;
+        }
 
         for (ProxiedPlayer player : List.copyOf(this.getProxy().getPlayers())) {
 
@@ -110,6 +127,26 @@ public class CommandSpy extends Plugin {
             }
 
             text.append("] [").color(ChatColor.GRAY);
+
+            if (proxyName == null) {
+
+                if (this.proxyName != null && !this.proxyName.equals("")) {
+                    text.append("EXT").color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Current Proxy").create()));
+                    text.append("] [").color(ChatColor.GRAY);
+                }
+
+            } else {
+
+                if (!proxyName.equals("")) {
+                    text.append(proxyName).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Other Proxy").create()));
+                } else {
+                    text.append("EXT").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Other Proxy (with empty name)").create()));
+                }
+
+                text.color(ChatColor.DARK_AQUA);
+                text.append("] [").color(ChatColor.GRAY);
+
+            }
 
             if (proxyCommand) {
                 text.append("COMMAND").color(ChatColor.GOLD).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Proxy Command").color(ChatColor.GOLD).create()));
