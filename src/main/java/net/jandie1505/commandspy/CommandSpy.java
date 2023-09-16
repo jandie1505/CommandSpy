@@ -177,7 +177,7 @@ public class CommandSpy extends Plugin implements Listener {
             }
 
             text.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("UUID: " + sender + "\nOn this proxy: " + (otherPlayer != null)).create()));
-            text.color(ChatColor.DARK_GRAY);
+            text.color(ChatColor.GRAY);
             text.append(": ").color(ChatColor.GRAY);
             text.append(message).color(ChatColor.GRAY);
 
