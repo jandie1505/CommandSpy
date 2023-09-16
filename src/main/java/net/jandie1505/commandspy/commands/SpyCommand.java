@@ -94,8 +94,9 @@ public class SpyCommand extends Command implements TabExecutor {
                         .append(spyData.getTargets().size() + " targets")
                         .color((spyData.getTargets().size() > 0) ? ChatColor.AQUA : ChatColor.GRAY)
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy getPlayers").color(ChatColor.AQUA).append(" to see a list").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy getPlayers"))
-                        .append("\n")
+                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy getPlayers"));
+
+                ComponentBuilder text2 = new ComponentBuilder()
                         .append("Spying filter:")
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("The type of events that should be shown").color(ChatColor.GRAY).create()))
                         .color(ChatColor.GOLD)
@@ -122,6 +123,7 @@ public class SpyCommand extends Command implements TabExecutor {
                         .color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
 
                 sender.sendMessage(text.create());
+                sender.sendMessage(text2.create());
 
             }
             case "getPlayers" -> {
