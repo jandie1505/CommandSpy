@@ -12,8 +12,10 @@ import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -32,10 +34,17 @@ public class CommandSpy extends Plugin implements Listener {
         this.config = new JSONObject();
         this.config.put("enableRedis", false);
         this.config.put("redisUrl", "127.0.0.1");
+        this.config.put("redisUsername", "");
+        this.config.put("redisPassword", "");
         this.config.put("customRedisChannel", "");
         this.config.put("proxyName", "");
 
         this.spyingPlayers = Collections.synchronizedMap(new HashMap<>());
+
+        // CONFIG
+
+        this.loadConfig(new File(this.getDataFolder(), "config.json"));
+        this.saveConfig(new File(this.getDataFolder(), "config.json"));
 
         // PROXY NAME
 
@@ -62,7 +71,18 @@ public class CommandSpy extends Plugin implements Listener {
                     channelName = "net.jandie1505.commandspy";
                 }
 
-                this.redisManager = new RedisManager(this, this.config.optString("redisUrl", ""), channelName);
+                String username = null;
+                String password = null;
+
+                if (!this.config.optString("redisUsername", "").equals("")) {
+                    username = this.config.optString("redisUsername");
+                }
+
+                if (!this.config.optString("redisPassword", "").equals("")) {
+                    password = this.config.optString("redisPassword");
+                }
+
+                this.redisManager = new RedisManager(this, this.config.optString("redisUrl", ""), username, password, channelName);
 
             } catch (Exception e) {
                 this.getLogger().log(Level.WARNING, "Could not connect to redis", e);
@@ -105,6 +125,46 @@ public class CommandSpy extends Plugin implements Listener {
         this.redisManager.close();
         this.redisManager = null;
 
+    }
+
+    public void loadConfig(File file) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                sb.append(System.lineSeparator());
+                line = br.readLine();
+            }
+
+            String out = sb.toString();
+
+            JSONObject jsonConfig = new JSONObject(out);
+
+            for (String key : jsonConfig.keySet()) {
+                this.config.put(key, jsonConfig.get(key));
+            }
+
+            this.getLogger().fine("Config loaded");
+        } catch (IOException | JSONException e) {
+            this.getLogger().warning("Failed to load config");
+        }
+    }
+
+    public void saveConfig(File file) {
+        try {
+            FileWriter writer = new FileWriter(file);
+            writer.write(this.config.toString(4));
+            writer.flush();
+            writer.close();
+
+            this.getLogger().fine("Config saved");
+        } catch (IOException e) {
+            this.getLogger().warning("Failed to save config");
+        }
     }
 
     public SpyData getSpyData(UUID playerId) {

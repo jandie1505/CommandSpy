@@ -14,13 +14,25 @@ public class RedisManager {
     private final Jedis redis;
     private final String channelName;
 
-    public RedisManager(CommandSpy plugin, String url, String channelName) {
+    public RedisManager(CommandSpy plugin, String url, String username, String password, String channelName) {
 
         // INIT
 
         this.plugin = plugin;
-        this.redis = new Jedis(url);
         this.channelName = channelName;
+        this.redis = new Jedis(url);
+
+        // AUTH
+
+        if (password != null) {
+
+            if (username != null) {
+                this.redis.auth(username, password);
+            } else {
+                this.redis.auth(password);
+            }
+
+        }
 
         // LISTENER
 
