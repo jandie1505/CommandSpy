@@ -13,10 +13,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
 import org.json.JSONObject;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class CommandSpy extends Plugin implements Listener {
@@ -35,8 +32,8 @@ public class CommandSpy extends Plugin implements Listener {
         this.config.put("redisHost", "127.0.0.1");
         this.config.put("cachePlayerNames", true);
 
-        this.spyingPlayers = Collections.synchronizedMap(this.spyingPlayers);
-        this.cachedPlayers = Collections.synchronizedMap(this.cachedPlayers);
+        this.spyingPlayers = Collections.synchronizedMap(new HashMap<>());
+        this.cachedPlayers = Collections.synchronizedMap(new HashMap<>());
 
         // LISTENER
 
