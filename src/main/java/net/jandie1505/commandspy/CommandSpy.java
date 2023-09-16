@@ -43,8 +43,14 @@ public class CommandSpy extends Plugin implements Listener {
 
         // CONFIG
 
-        this.loadConfig(new File(this.getDataFolder(), "config.json"));
-        this.saveConfig(new File(this.getDataFolder(), "config.json"));
+        File configFile = new File(this.getDataFolder(), "config.json");
+
+        if (!configFile.getParentFile().exists()) {
+            configFile.mkdirs();
+        }
+
+        this.loadConfig(configFile);
+        this.saveConfig(configFile);
 
         // PROXY NAME
 
