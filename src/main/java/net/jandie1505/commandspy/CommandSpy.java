@@ -1,5 +1,6 @@
 package net.jandie1505.commandspy;
 
+import net.jandie1505.commandspy.commands.SpyCommand;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -27,6 +28,8 @@ public class CommandSpy extends Plugin implements Listener {
     @Override
     public void onEnable() {
 
+        // INIT
+
         this.config = new JSONObject();
         this.config.put("enableRedis", false);
         this.config.put("redisHost", "127.0.0.1");
@@ -35,7 +38,15 @@ public class CommandSpy extends Plugin implements Listener {
         this.spyingPlayers = Collections.synchronizedMap(this.spyingPlayers);
         this.cachedPlayers = Collections.synchronizedMap(this.cachedPlayers);
 
+        // LISTENER
+
         this.getProxy().getPluginManager().registerListener(this, this);
+
+        // COMMANDS
+
+        this.getProxy().getPluginManager().registerCommand(this, new SpyCommand(this));
+
+        // TASKS
 
         this.getProxy().getScheduler().schedule(this, () -> {
 
@@ -49,6 +60,8 @@ public class CommandSpy extends Plugin implements Listener {
             }
 
         }, 1, 30, TimeUnit.SECONDS);
+
+        // FINISHED
 
     }
 
@@ -269,7 +282,7 @@ public class CommandSpy extends Plugin implements Listener {
             return;
         }
 
-        this.cachedPlayers.put(event.getPlayer().getUniqueId(), new CachedPlayerInfo(event.getPlayer().getUniqueId(), event.getPlayer().getName(), event.getPlayer().getServer().getInfo().getName()));
+        this.cachedPlayers.put(event.getPlayer().getUniqueId(), new CachedPlayerInfo(event.getPlayer().getUniqueId(), event.getPlayer().getName(), null));
 
     }
 
