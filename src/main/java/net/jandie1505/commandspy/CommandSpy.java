@@ -191,8 +191,7 @@ public class CommandSpy extends Plugin implements Listener {
                     .append("SPY")
                     .color(ChatColor.GOLD)
                     .append("] [")
-                    .color(ChatColor.GRAY)
-                    .append(serverName);
+                    .color(ChatColor.GRAY);
 
             if (proxyName == null) {
 
@@ -213,6 +212,8 @@ public class CommandSpy extends Plugin implements Listener {
                 text.append("] [").color(ChatColor.GRAY);
 
             }
+
+            text.append(serverName);
 
             if (serverName.equals(player.getServer().getInfo().getName())) {
                 text.color(ChatColor.AQUA);
