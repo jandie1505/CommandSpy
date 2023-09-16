@@ -1,8 +1,9 @@
 package net.jandie1505.commandspy;
 
+import com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI;
+import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
 import net.jandie1505.commandspy.commands.SpyCommand;
 import net.jandie1505.commandspy.data.SpyData;
-import net.jandie1505.commandspy.redis.RedisManager;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -21,10 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public class CommandSpy extends Plugin implements Listener {
-    private String proxyName;
     private JSONObject config;
     private Map<UUID, SpyData> spyingPlayers;
-    private RedisManager redisManager;
 
     @Override
     public void onEnable() {
@@ -32,11 +31,6 @@ public class CommandSpy extends Plugin implements Listener {
         // INIT
 
         this.config = new JSONObject();
-        this.config.put("enableRedis", false);
-        this.config.put("redisUrl", "127.0.0.1");
-        this.config.put("redisUsername", "");
-        this.config.put("redisPassword", "");
-        this.config.put("customRedisChannel", "");
         this.config.put("proxyName", "");
 
         this.spyingPlayers = Collections.synchronizedMap(new HashMap<>());
@@ -58,50 +52,6 @@ public class CommandSpy extends Plugin implements Listener {
 
         this.loadConfig(configFile);
         this.saveConfig(configFile);
-
-        // PROXY NAME
-
-        this.proxyName = null;
-
-        if (!this.config.optString("proxyName", "").equals("")) {
-            this.proxyName = this.config.optString("proxyName", "");
-        }
-
-        // REDIS
-
-        if (this.redisManager != null) {
-            this.redisManager.close();
-            this.redisManager = null;
-        }
-
-        if (this.config.optBoolean("enableRedis", false)) {
-
-            try {
-
-                String channelName = this.config.optString("customRedisChannel", "");
-
-                if (channelName.equals("")) {
-                    channelName = "net.jandie1505.commandspy";
-                }
-
-                String username = null;
-                String password = null;
-
-                if (!this.config.optString("redisUsername", "").equals("")) {
-                    username = this.config.optString("redisUsername");
-                }
-
-                if (!this.config.optString("redisPassword", "").equals("")) {
-                    password = this.config.optString("redisPassword");
-                }
-
-                this.redisManager = new RedisManager(this, this.config.optString("redisUrl", ""), username, password, channelName);
-
-            } catch (Exception e) {
-                this.getLogger().log(Level.WARNING, "Could not connect to redis", e);
-            }
-
-        }
 
         // LISTENER
 
@@ -134,11 +84,6 @@ public class CommandSpy extends Plugin implements Listener {
     public void onDisable() {
 
         this.spyingPlayers = null;
-
-        if (this.redisManager != null) {
-            this.redisManager.close();
-            this.redisManager = null;
-        }
 
     }
 
@@ -254,8 +199,8 @@ public class CommandSpy extends Plugin implements Listener {
 
             if (proxyName == null) {
 
-                if (this.proxyName != null && !this.proxyName.equals("")) {
-                    text.append("EXT").color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Current Proxy").create()));
+                if (this.isRedisBungeeLoaded()) {
+                    text.append(RedisBungeeAPI.getRedisBungeeApi().getProxyId()).color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Current Proxy").create()));
                     text.append("] [").color(ChatColor.GRAY);
                 }
 
@@ -306,6 +251,52 @@ public class CommandSpy extends Plugin implements Listener {
 
     }
 
+    public boolean isRedisBungeeLoaded() {
+
+        try {
+            Class.forName("com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+
+    }
+
+    /**
+     * Sends a spy event.
+     */
+    public void sendRedisSpyEvent(boolean command, boolean proxyCommand, boolean cancelled, String serverName, UUID sender, String senderName, String chatMessage) {
+
+        if (!isRedisBungeeLoaded()) {
+            return;
+        }
+
+        try {
+
+            JSONObject message = new JSONObject();
+
+            message.put("proxyName", RedisBungeeAPI.getRedisBungeeApi().getProxyId());
+            message.put("command", command);
+            message.put("proxyCommand", proxyCommand);
+            message.put("cancelled", cancelled);
+            message.put("serverName", serverName);
+            message.put("sender", sender.toString());
+            message.put("senderName", senderName);
+            message.put("message", chatMessage);
+
+            JSONObject json = new JSONObject();
+
+            json.put("type", "spyEvent");
+            json.put("message", message);
+
+            RedisBungeeAPI.getRedisBungeeApi().sendChannelMessage("net.jandie1505.commandspy", json.toString());
+
+        } catch (Exception e) {
+            this.getLogger().log(Level.WARNING, "Could not send redis message", e);
+        }
+
+    }
+
     public UUID getPlayerId(String playerName) {
 
         try {
@@ -339,8 +330,8 @@ public class CommandSpy extends Plugin implements Listener {
 
         this.getProxy().getScheduler().runAsync(this, () -> {
 
-            if (this.redisManager != null) {
-                this.redisManager.sendSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
+            if (this.isRedisBungeeLoaded()) {
+                this.sendRedisSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
             }
 
         });
@@ -352,8 +343,60 @@ public class CommandSpy extends Plugin implements Listener {
         this.spyingPlayers.remove(event.getPlayer().getUniqueId());
     }
 
-    public String getProxyName() {
-        return this.proxyName;
+    @EventHandler
+    public void onPubSubMessage(PubSubMessageEvent event) {
+
+        if (!event.getChannel().equals("net.jandie1505.commandspy")) {
+            return;
+        }
+
+        try {
+
+            JSONObject json = new JSONObject(event.getMessage());
+
+            if (json.optString("type") == null) {
+                return;
+            }
+
+            if (json.optJSONObject("message") == null) {
+                return;
+            }
+
+            String type = json.optString("type");
+            JSONObject message = json.optJSONObject("message");
+
+            switch (type) {
+                case "spyEvent" -> {
+
+                    String proxyName = message.optString("proxyName");
+                    boolean command = message.optBoolean("command", false);
+                    boolean proxyCommand = message.optBoolean("proxyCommand", false);
+                    boolean cancelled = message.optBoolean("cancelled", false);
+                    String serverName = message.optString("serverName");
+                    UUID sender;
+
+                    try {
+                        sender = UUID.fromString(message.optString("sender", ""));
+                    } catch (IllegalArgumentException e) {
+                        return;
+                    }
+
+                    String senderName = message.optString("senderName");
+                    String chatMessage = message.optString("message");
+
+                    if (proxyName == null || serverName == null || sender == null || senderName == null || chatMessage == null) {
+                        return;
+                    }
+
+                    this.spyEvent(proxyName, command, proxyCommand, cancelled, serverName, sender, senderName, chatMessage);
+
+                }
+            }
+
+        } catch (Exception e) {
+            this.getLogger().log(Level.WARNING, "Exception while decoding redis message", e);
+        }
+
     }
 
 }

@@ -19,6 +19,10 @@
             <id>bungeecord-repo</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -36,16 +40,23 @@
             <type>javadoc</type>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>4.3.1</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.json/json -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20230618</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ProxioDev.RedisBungee</groupId>
+            <artifactId>RedisBungee-API</artifactId>
+            <version>0.11.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ProxioDev.RedisBungee</groupId>
+            <artifactId>RedisBungee-Bungee</artifactId>
+            <version>0.11.3</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
