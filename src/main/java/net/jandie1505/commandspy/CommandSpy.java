@@ -31,7 +31,6 @@ public class CommandSpy extends Plugin implements Listener {
         // INIT
 
         this.config = new JSONObject();
-        this.config.put("proxyName", "");
 
         this.spyingPlayers = Collections.synchronizedMap(new HashMap<>());
 
