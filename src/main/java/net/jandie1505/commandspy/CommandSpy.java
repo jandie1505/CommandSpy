@@ -135,8 +135,10 @@ public class CommandSpy extends Plugin implements Listener {
 
         this.spyingPlayers = null;
 
-        this.redisManager.close();
-        this.redisManager = null;
+        if (this.redisManager != null) {
+            this.redisManager.close();
+            this.redisManager = null;
+        }
 
     }
 
