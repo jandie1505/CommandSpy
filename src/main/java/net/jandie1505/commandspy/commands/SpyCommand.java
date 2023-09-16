@@ -160,7 +160,7 @@ public class SpyCommand extends Command implements TabExecutor {
                     return;
                 }
 
-                UUID playerId = this.plugin.getCachedPlayerId(args[1]);
+                UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
                     sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
@@ -183,7 +183,7 @@ public class SpyCommand extends Command implements TabExecutor {
                     return;
                 }
 
-                UUID playerId = this.plugin.getCachedPlayerId(args[1]);
+                UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
                     sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());

@@ -225,7 +225,7 @@ public class CommandSpy extends Plugin implements Listener {
         return this.cachedPlayers.get(playerId);
     }
 
-    public UUID getCachedPlayerId(String playerName) {
+    public UUID getPlayerId(String playerName) {
 
         try {
             return UUID.fromString(playerName);
@@ -237,6 +237,10 @@ public class CommandSpy extends Plugin implements Listener {
 
         if (player != null) {
             return player.getUniqueId();
+        }
+
+        if (!this.config.optBoolean("cachePlayerNames", false)) {
+            return null;
         }
 
         for (UUID otherPlayerId : Map.copyOf(this.cachedPlayers).keySet()) {
