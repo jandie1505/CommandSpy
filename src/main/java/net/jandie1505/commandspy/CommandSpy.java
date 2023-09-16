@@ -159,11 +159,11 @@ public class CommandSpy extends Plugin implements Listener {
             }
 
             if (proxyCommand) {
-                text.append("COMMAND").color(ChatColor.GOLD).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Proxy Command").color(ChatColor.GOLD).create()));
+                text.append("COMMAND").color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Proxy Command").color(ChatColor.GOLD).create()));
             } else if (command) {
                 text.append("COMMAND").color(ChatColor.DARK_AQUA);
             } else {
-                text.append("CHAT").color(ChatColor.DARK_GRAY);
+                text.append("CHAT").color(ChatColor.YELLOW);
             }
 
             text.append("] ").color(ChatColor.GRAY);
