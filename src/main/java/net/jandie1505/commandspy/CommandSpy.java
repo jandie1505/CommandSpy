@@ -322,9 +322,13 @@ public class CommandSpy extends Plugin implements Listener {
 
         this.spyEvent(null, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
 
-        if (this.redisManager != null) {
-            this.redisManager.sendSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
-        }
+        this.getProxy().getScheduler().runAsync(this, () -> {
+
+            if (this.redisManager != null) {
+                this.redisManager.sendSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
+            }
+
+        });
 
     }
 
