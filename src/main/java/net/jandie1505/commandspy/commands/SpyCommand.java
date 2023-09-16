@@ -84,8 +84,8 @@ public class SpyCommand extends Command implements TabExecutor {
                         .append("\n")
                         .append("Current server: ")
                         .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy currentServer true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy currentServer " + !spyData.isSpyCurrentServerPlayers()))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy currentserver true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
+                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy currentserver " + !spyData.isSpyCurrentServerPlayers()))
                         .append(String.valueOf(spyData.isSpyCurrentServerPlayers()))
                         .color(spyData.isSpyCurrentServerPlayers() ? ChatColor.GREEN : ChatColor.RED)
                         .append("\n")
@@ -93,8 +93,8 @@ public class SpyCommand extends Command implements TabExecutor {
                         .color(ChatColor.GRAY)
                         .append(spyData.getTargets().size() + " targets")
                         .color((spyData.getTargets().size() > 0) ? ChatColor.AQUA : ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy getPlayers").color(ChatColor.AQUA).append(" to see a list").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy getPlayers"));
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy getplayers").color(ChatColor.AQUA).append(" to see a list").color(ChatColor.GRAY).create()))
+                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy getplayers"));
 
                 ComponentBuilder text2 = new ComponentBuilder()
                         .append("Spying filter:")
@@ -117,8 +117,8 @@ public class SpyCommand extends Command implements TabExecutor {
                         .append("\n")
                         .append("Proxy Commands: ")
                         .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy proxyCommands true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy proxyCommands " + !spyData.isSpyProxyCommands()))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy proxycommands true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
+                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy proxycommands " + !spyData.isSpyProxyCommands()))
                         .append(String.valueOf(spyData.isSpyProxyCommands()))
                         .color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
 
@@ -126,7 +126,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text2.create());
 
             }
-            case "getPlayers" -> {
+            case "getplayers" -> {
                 ComponentBuilder text = new ComponentBuilder()
                         .append("Specific spying targets:")
                         .color(ChatColor.GOLD)
@@ -155,10 +155,10 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text.create());
 
             }
-            case "addPlayer" -> {
+            case "addplayer" -> {
 
                 if (args.length < 2) {
-                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy addPlayer <uuid/player>").color(ChatColor.RED).create());
+                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy addplayer <uuid/player>").color(ChatColor.RED).create());
                     return;
                 }
 
@@ -178,10 +178,10 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(new ComponentBuilder().append("Target successfully added").color(ChatColor.GREEN).create());
 
             }
-            case "removePlayer" -> {
+            case "removeplayer" -> {
 
                 if (args.length < 2) {
-                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy removePlayer <uuid/player>").color(ChatColor.RED).create());
+                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy removeplayer <uuid/player>").color(ChatColor.RED).create());
                     return;
                 }
 
@@ -201,7 +201,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(new ComponentBuilder().append("Target successfully removed").color(ChatColor.GREEN).create());
 
             }
-            case "clearPlayers" -> {
+            case "clearplayers" -> {
 
                 spyData.clearTargets();
                 sender.sendMessage(new ComponentBuilder().append("Target list cleared").color(ChatColor.GREEN).create());
@@ -229,7 +229,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text.create());
 
             }
-            case "currentServer" -> {
+            case "currentserver" -> {
 
                 ComponentBuilder text = new ComponentBuilder()
                         .append("Spy current server")
@@ -273,7 +273,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text.create());
 
             }
-            case "proxyCommands" -> {
+            case "proxycommands" -> {
 
                 ComponentBuilder text = new ComponentBuilder()
                         .append("Spy on proxy commands")
@@ -335,12 +335,12 @@ public class SpyCommand extends Command implements TabExecutor {
 
         switch (args.length) {
             case 1 -> {
-                return List.of("info", "addPlayer", "removePlayer", "clearPlayers", "getPlayers", "all", "currentServer", "commands", "proxyCommands", "chat");
+                return List.of("info", "addplayer", "removeplayer", "clearplayer", "getplayers", "all", "currentserver", "commands", "proxycommands", "chat");
             }
             case 2 -> {
 
                 switch (args[0]) {
-                    case "addPlayer" -> {
+                    case "addplayer" -> {
                         List<String> players = new ArrayList<>();
 
                         for (UUID playerId : this.plugin.getCachedPlayers().keySet()) {
@@ -356,7 +356,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                         return List.copyOf(players);
                     }
-                    case "removePlayer" -> {
+                    case "removeplayer" -> {
                         SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
 
                         List<String> players = new ArrayList<>();
@@ -375,7 +375,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                         return List.copyOf(players);
                     }
-                    case "all", "currentServer", "commands", "proxyCommands", "chat" -> {
+                    case "all", "currentserver", "commands", "proxycommands", "chat" -> {
                         return List.of("false", "true");
                     }
                     default -> {
