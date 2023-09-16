@@ -1,0 +1,4 @@
+main: net.jandie1505.commandspy.CommandSpy
+name: CommandSpy
+version: '1.0'
+description: 'A plugin which allows to see executed commands and chat messages of other players'
