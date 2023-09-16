@@ -133,6 +133,7 @@ public class SpyCommand extends Command implements TabExecutor {
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("This is a list of the specific spying targets").color(ChatColor.GRAY).create()));
 
                 if (spyData.getTargets().isEmpty()) {
+                    text.append("\n");
                     text.append("--- no entries ---").color(ChatColor.GRAY);
                 }
 
