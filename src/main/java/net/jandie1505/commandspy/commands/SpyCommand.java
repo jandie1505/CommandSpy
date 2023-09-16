@@ -134,7 +134,6 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 if (spyData.getTargets().isEmpty()) {
                     text.append("--- no entries ---").color(ChatColor.GRAY);
-                    return;
                 }
 
                 for (UUID playerId : spyData.getTargets()) {
