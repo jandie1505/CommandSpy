@@ -164,7 +164,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                    sender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
                     return;
                 }
 
@@ -187,7 +187,7 @@ public class SpyCommand extends Command implements TabExecutor {
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                    sender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
                     return;
                 }
 
