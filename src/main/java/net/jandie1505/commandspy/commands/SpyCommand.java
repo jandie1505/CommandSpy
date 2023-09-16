@@ -1,6 +1,5 @@
 package net.jandie1505.commandspy.commands;
 
-import net.jandie1505.commandspy.data.CachedPlayerInfo;
 import net.jandie1505.commandspy.CommandSpy;
 import net.jandie1505.commandspy.data.SpyData;
 import net.md_5.bungee.api.ChatColor;
@@ -138,16 +137,16 @@ public class SpyCommand extends Command implements TabExecutor {
                 }
 
                 for (UUID playerId : spyData.getTargets()) {
-                    CachedPlayerInfo playerInfo = this.plugin.getCachedPlayer(playerId);
+                    ProxiedPlayer player = this.plugin.getProxy().getPlayer(playerId);
 
                     text.append("\n");
 
-                    if (playerInfo == null) {
+                    if (player == null) {
                         text.append(playerId.toString()).color(ChatColor.GRAY);
                         continue;
                     }
 
-                    text.append(playerInfo.getName()).color(ChatColor.GRAY);
+                    text.append(player.getName()).color(ChatColor.GRAY);
                     text.append(" (" + playerId + ")").color(ChatColor.GRAY);
 
                 }
@@ -341,16 +340,16 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 switch (args[0]) {
                     case "addplayer" -> {
+                        SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
                         List<String> players = new ArrayList<>();
 
-                        for (UUID playerId : this.plugin.getCachedPlayers().keySet()) {
-                            CachedPlayerInfo playerInfo = this.plugin.getCachedPlayer(playerId);
+                        for (ProxiedPlayer player : List.copyOf(this.plugin.getProxy().getPlayers())) {
 
-                            if (playerInfo == null) {
+                            if (spyData.getTargets().contains(player.getUniqueId())) {
                                 continue;
                             }
 
-                            players.add(playerInfo.getName());
+                            players.add(player.getName());
 
                         }
 
@@ -358,18 +357,17 @@ public class SpyCommand extends Command implements TabExecutor {
                     }
                     case "removeplayer" -> {
                         SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
-
                         List<String> players = new ArrayList<>();
 
                         for (UUID playerId : spyData.getTargets()) {
-                            CachedPlayerInfo playerInfo = this.plugin.getCachedPlayer(playerId);
+                            ProxiedPlayer player = this.plugin.getProxy().getPlayer(playerId);
 
-                            if (playerInfo == null) {
+                            if (player == null) {
                                 players.add(playerId.toString());
                                 continue;
                             }
 
-                            players.add(playerInfo.getName());
+                            players.add(player.getName());
 
                         }
 
