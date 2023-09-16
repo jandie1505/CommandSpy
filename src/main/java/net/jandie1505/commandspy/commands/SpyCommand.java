@@ -26,10 +26,12 @@ public class SpyCommand extends Command implements TabExecutor {
     @Override
     public void execute(CommandSender sender, String[] args) {
 
+        CommandSender messageSender = sender;
+
         if (sender == this.plugin.getProxy().getConsole()) {
 
             if (args.length < 1) {
-                sender.sendMessage(new ComponentBuilder().append("Console Usage: spy <PLAYER> info/addPlayer/removePlayer/allPlayers/currentServer/commands/proxyCommands/chat [args]").color(ChatColor.RED).create());
+                messageSender.sendMessage(new ComponentBuilder().append("Console Usage: spy <PLAYER> info/addPlayer/removePlayer/allPlayers/currentServer/commands/proxyCommands/chat [args]").color(ChatColor.RED).create());
                 return;
             }
 
@@ -42,7 +44,7 @@ public class SpyCommand extends Command implements TabExecutor {
             }
 
             if (player == null) {
-                sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                messageSender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
                 return;
             }
 
@@ -54,6 +56,7 @@ public class SpyCommand extends Command implements TabExecutor {
             args = newArgs;
 
             sender = player;
+            messageSender = this.plugin.getProxy().getConsole();
 
         }
 
@@ -121,8 +124,8 @@ public class SpyCommand extends Command implements TabExecutor {
                         .append(String.valueOf(spyData.isSpyProxyCommands()))
                         .color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
-                sender.sendMessage(text2.create());
+                messageSender.sendMessage(text.create());
+                messageSender.sendMessage(text2.create());
 
             }
             case "getplayers" -> {
@@ -151,59 +154,59 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 }
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
             case "addplayer" -> {
 
                 if (args.length < 2) {
-                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy addplayer <uuid/player>").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Usage: /spy addplayer <uuid/player>").color(ChatColor.RED).create());
                     return;
                 }
 
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    sender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
                     return;
                 }
 
                 if (spyData.getTargets().contains(playerId)) {
-                    sender.sendMessage(new ComponentBuilder().append("Target already added").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Target already added").color(ChatColor.RED).create());
                     return;
                 }
 
                 spyData.addTarget(playerId);
-                sender.sendMessage(new ComponentBuilder().append("Target successfully added").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(new ComponentBuilder().append("Target successfully added").color(ChatColor.GREEN).create());
 
             }
             case "removeplayer" -> {
 
                 if (args.length < 2) {
-                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy removeplayer <uuid/player>").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Usage: /spy removeplayer <uuid/player>").color(ChatColor.RED).create());
                     return;
                 }
 
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    sender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
                     return;
                 }
 
                 if (!spyData.getTargets().contains(playerId)) {
-                    sender.sendMessage(new ComponentBuilder().append("Target not in target list").color(ChatColor.RED).create());
+                    messageSender.sendMessage(new ComponentBuilder().append("Target not in target list").color(ChatColor.RED).create());
                     return;
                 }
 
                 spyData.removeTarget(playerId);
-                sender.sendMessage(new ComponentBuilder().append("Target successfully removed").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(new ComponentBuilder().append("Target successfully removed").color(ChatColor.GREEN).create());
 
             }
             case "clearplayers" -> {
 
                 spyData.clearTargets();
-                sender.sendMessage(new ComponentBuilder().append("Target list cleared").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(new ComponentBuilder().append("Target list cleared").color(ChatColor.GREEN).create());
 
             }
             case "all" -> {
@@ -225,7 +228,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 text.append(String.valueOf(spyData.isSpyAllPlayers())).color(spyData.isSpyAllPlayers() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
             case "currentserver" -> {
@@ -247,7 +250,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 text.append(String.valueOf(spyData.isSpyCurrentServerPlayers())).color(spyData.isSpyCurrentServerPlayers() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
             case "commands" -> {
@@ -269,7 +272,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 text.append(String.valueOf(spyData.isSpyCommands())).color(spyData.isSpyCommands() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
             case "proxycommands" -> {
@@ -291,7 +294,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 text.append(String.valueOf(spyData.isSpyProxyCommands())).color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
             case "chat" -> {
@@ -313,10 +316,10 @@ public class SpyCommand extends Command implements TabExecutor {
 
                 text.append(String.valueOf(spyData.isSpyChat())).color(spyData.isSpyChat() ? ChatColor.GREEN : ChatColor.RED);
 
-                sender.sendMessage(text.create());
+                messageSender.sendMessage(text.create());
 
             }
-            default -> sender.sendMessage(new ComponentBuilder().append("Unknown subcommand").color(ChatColor.RED).create());
+            default -> messageSender.sendMessage(new ComponentBuilder().append("Unknown subcommand").color(ChatColor.RED).create());
         }
 
     }
