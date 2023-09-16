@@ -45,8 +45,15 @@ public class CommandSpy extends Plugin implements Listener {
 
         File configFile = new File(this.getDataFolder(), "config.json");
 
-        if (!configFile.getParentFile().exists()) {
-            configFile.mkdirs();
+        if (!configFile.exists()) {
+
+            try {
+                configFile.getParentFile().mkdirs();
+                configFile.createNewFile();
+            } catch (IOException e) {
+                this.getLogger().warning("Could not load config");
+            }
+
         }
 
         this.loadConfig(configFile);
