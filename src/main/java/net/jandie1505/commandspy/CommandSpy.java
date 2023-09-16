@@ -52,6 +52,12 @@ public class CommandSpy extends Plugin implements Listener {
         this.loadConfig(configFile);
         this.saveConfig(configFile);
 
+        // REDIS
+
+        if (this.isRedisBungeeLoaded()) {
+            RedisBungeeAPI.getRedisBungeeApi().registerPubSubChannels("net.jandie1505.commandspy");
+        }
+
         // LISTENER
 
         this.getProxy().getPluginManager().registerListener(this, this);
@@ -274,7 +280,6 @@ public class CommandSpy extends Plugin implements Listener {
 
             JSONObject message = new JSONObject();
 
-            message.put("proxyName", RedisBungeeAPI.getRedisBungeeApi().getProxyId());
             message.put("command", command);
             message.put("proxyCommand", proxyCommand);
             message.put("cancelled", cancelled);
@@ -285,6 +290,7 @@ public class CommandSpy extends Plugin implements Listener {
 
             JSONObject json = new JSONObject();
 
+            json.put("proxy", RedisBungeeAPI.getRedisBungeeApi().getProxyId());
             json.put("type", "spyEvent");
             json.put("message", message);
 
@@ -361,13 +367,18 @@ public class CommandSpy extends Plugin implements Listener {
                 return;
             }
 
+            String proxy = json.optString("proxy");
+
+            if (proxy == null || proxy.equals(RedisBungeeAPI.getRedisBungeeApi().getProxyId())) {
+                return;
+            }
+
             String type = json.optString("type");
             JSONObject message = json.optJSONObject("message");
 
             switch (type) {
                 case "spyEvent" -> {
 
-                    String proxyName = message.optString("proxyName");
                     boolean command = message.optBoolean("command", false);
                     boolean proxyCommand = message.optBoolean("proxyCommand", false);
                     boolean cancelled = message.optBoolean("cancelled", false);
@@ -383,11 +394,11 @@ public class CommandSpy extends Plugin implements Listener {
                     String senderName = message.optString("senderName");
                     String chatMessage = message.optString("message");
 
-                    if (proxyName == null || serverName == null || sender == null || senderName == null || chatMessage == null) {
+                    if (serverName == null || sender == null || senderName == null || chatMessage == null) {
                         return;
                     }
 
-                    this.spyEvent(proxyName, command, proxyCommand, cancelled, serverName, sender, senderName, chatMessage);
+                    this.spyEvent(proxy, command, proxyCommand, cancelled, serverName, sender, senderName, chatMessage);
 
                 }
             }
