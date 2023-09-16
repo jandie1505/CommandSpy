@@ -126,6 +126,35 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text.create());
 
             }
+            case "getPlayers" -> {
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Specific spying targets:")
+                        .color(ChatColor.GOLD)
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("This is a list of the specific spying targets").color(ChatColor.GRAY).create()));
+
+                if (spyData.getTargets().isEmpty()) {
+                    text.append("--- no entries ---").color(ChatColor.GRAY);
+                    return;
+                }
+
+                for (UUID playerId : spyData.getTargets()) {
+                    CachedPlayerInfo playerInfo = this.plugin.getCachedPlayer(playerId);
+
+                    text.append("\n");
+
+                    if (playerInfo == null) {
+                        text.append(playerId.toString()).color(ChatColor.GRAY);
+                        continue;
+                    }
+
+                    text.append(playerInfo.getName()).color(ChatColor.GRAY);
+                    text.append(" (" + playerId + ")").color(ChatColor.GRAY);
+
+                }
+
+                sender.sendMessage(text.create());
+
+            }
             default -> sender.sendMessage(new ComponentBuilder().append("Unknown subcommand").color(ChatColor.RED).create());
         }
 
