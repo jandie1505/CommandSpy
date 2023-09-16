@@ -194,14 +194,6 @@ public class CommandSpy extends Plugin implements Listener {
                     .color(ChatColor.GRAY)
                     .append(serverName);
 
-            if (serverName.equals(player.getServer().getInfo().getName())) {
-                text.color(ChatColor.GREEN);
-            } else {
-                text.color(ChatColor.DARK_GRAY);
-            }
-
-            text.append("] [").color(ChatColor.GRAY);
-
             if (proxyName == null) {
 
                 if (this.isRedisBungeeLoaded()) {
@@ -221,6 +213,14 @@ public class CommandSpy extends Plugin implements Listener {
                 text.append("] [").color(ChatColor.GRAY);
 
             }
+
+            if (serverName.equals(player.getServer().getInfo().getName())) {
+                text.color(ChatColor.AQUA);
+            } else {
+                text.color(ChatColor.DARK_AQUA);
+            }
+
+            text.append("] [").color(ChatColor.GRAY);
 
             if (proxyCommand) {
                 text.append("COMMAND").color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Proxy Command").color(ChatColor.GOLD).create()));
