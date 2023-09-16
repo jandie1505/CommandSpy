@@ -5,6 +5,8 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
+import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.event.EventHandler;
@@ -20,6 +22,7 @@ public class CommandSpy extends Plugin implements Listener {
     private String proxyName;
     private JSONObject config;
     private Map<UUID, SpyData> spyingPlayers;
+    private Map<UUID, CachedPlayerInfo> cachedPlayers;
 
     @Override
     public void onEnable() {
@@ -27,8 +30,10 @@ public class CommandSpy extends Plugin implements Listener {
         this.config = new JSONObject();
         this.config.put("enableRedis", false);
         this.config.put("redisHost", "127.0.0.1");
+        this.config.put("cachePlayerNames", true);
 
         this.spyingPlayers = Collections.synchronizedMap(this.spyingPlayers);
+        this.cachedPlayers = Collections.synchronizedMap(this.cachedPlayers);
 
         this.getProxy().getPluginManager().registerListener(this, this);
 
@@ -45,6 +50,12 @@ public class CommandSpy extends Plugin implements Listener {
 
         }, 1, 30, TimeUnit.SECONDS);
 
+    }
+
+    @Override
+    public void onDisable() {
+        this.spyingPlayers = null;
+        this.cachedPlayers = null;
     }
 
     public void updateSpyingPlayer(UUID playerId, SpyData spyData) {
@@ -184,6 +195,50 @@ public class CommandSpy extends Plugin implements Listener {
 
     }
 
+    public CachedPlayerInfo getCachedPlayer(UUID playerId) {
+        ProxiedPlayer player = this.getProxy().getPlayer(playerId);
+
+        if (player != null) {
+            CachedPlayerInfo cachedPlayerInfo = this.cachedPlayers.get(playerId);
+
+            if (cachedPlayerInfo == null) {
+                cachedPlayerInfo = new CachedPlayerInfo(player.getUniqueId(), player.getName(), player.getServer().getInfo().getName());
+                this.cachedPlayers.put(player.getUniqueId(), cachedPlayerInfo);
+            }
+
+            return cachedPlayerInfo;
+        }
+
+        return this.cachedPlayers.get(playerId);
+    }
+
+    public UUID getCachedPlayerId(String playerName) {
+        ProxiedPlayer player = this.getProxy().getPlayer(playerName);
+
+        if (player != null) {
+            return player.getUniqueId();
+        }
+
+        for (UUID otherPlayerId : Map.copyOf(this.cachedPlayers).keySet()) {
+            CachedPlayerInfo otherCachedPlayerInfo = this.cachedPlayers.get(otherPlayerId);
+
+            if (otherCachedPlayerInfo == null) {
+                continue;
+            }
+
+            if (otherCachedPlayerInfo.getName().equals(playerName)) {
+                return otherPlayerId;
+            }
+
+        }
+
+        return null;
+    }
+
+    public Map<UUID, CachedPlayerInfo> getCachedPlayers() {
+        return Map.copyOf(this.cachedPlayers);
+    }
+
     /**
      * This method handles the local command spy.
      */
@@ -197,6 +252,30 @@ public class CommandSpy extends Plugin implements Listener {
         ProxiedPlayer sender = (ProxiedPlayer) event.getSender();
 
         this.spyEvent(null, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
+
+    }
+
+    @EventHandler
+    public void onPostLogin(PostLoginEvent event) {
+
+        if (!this.config.optBoolean("cachePlayerNames", false)) {
+            return;
+        }
+
+        this.cachedPlayers.put(event.getPlayer().getUniqueId(), new CachedPlayerInfo(event.getPlayer().getUniqueId(), event.getPlayer().getName(), event.getPlayer().getServer().getInfo().getName()));
+
+    }
+
+    @EventHandler
+    public void onDisconnect(PlayerDisconnectEvent event) {
+
+        this.spyingPlayers.remove(event.getPlayer().getUniqueId());
+
+        if (!this.config.optBoolean("cachePlayerNames", false)) {
+            return;
+        }
+
+        this.cachedPlayers.remove(event.getPlayer().getUniqueId());
 
     }
 
