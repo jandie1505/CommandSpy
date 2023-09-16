@@ -1,13 +1,13 @@
 package net.jandie1505.commandspy;
 
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Content;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.ChatEvent;
+import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
+import net.md_5.bungee.event.EventHandler;
 import org.json.JSONObject;
 
 import java.util.Collections;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class CommandSpy extends Plugin {
+public class CommandSpy extends Plugin implements Listener {
     private String proxyName;
     private JSONObject config;
     private Map<UUID, SpyData> spyingPlayers;
@@ -29,6 +29,8 @@ public class CommandSpy extends Plugin {
         this.config.put("redisHost", "127.0.0.1");
 
         this.spyingPlayers = Collections.synchronizedMap(this.spyingPlayers);
+
+        this.getProxy().getPluginManager().registerListener(this, this);
 
         this.getProxy().getScheduler().schedule(this, () -> {
 
@@ -179,6 +181,22 @@ public class CommandSpy extends Plugin {
             player.sendMessage(text.create());
 
         }
+
+    }
+
+    /**
+     * This method handles the local command spy.
+     */
+    @EventHandler
+    public void onChat(ChatEvent event) {
+
+        if (!(event.getSender() instanceof ProxiedPlayer)) {
+            return;
+        }
+
+        ProxiedPlayer sender = (ProxiedPlayer) event.getSender();
+
+        this.spyEvent(null, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
 
     }
 
