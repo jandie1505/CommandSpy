@@ -263,7 +263,7 @@ public class CommandSpy extends Plugin implements Listener {
         this.spyEvent(null, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
 
         if (this.redisManager != null) {
-            this.redisManager.sendSpyEvent(this.proxyName, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
+            this.redisManager.sendSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
         }
 
     }
@@ -271,6 +271,10 @@ public class CommandSpy extends Plugin implements Listener {
     @EventHandler
     public void onDisconnect(PlayerDisconnectEvent event) {
         this.spyingPlayers.remove(event.getPlayer().getUniqueId());
+    }
+
+    public String getProxyName() {
+        return this.proxyName;
     }
 
 }

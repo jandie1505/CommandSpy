@@ -101,9 +101,15 @@ public class RedisManager {
     /**
      * Sends a spy event.
      */
-    public void sendSpyEvent(String proxyName, boolean command, boolean proxyCommand, boolean cancelled, String serverName, UUID sender, String senderName, String chatMessage) {
+    public void sendSpyEvent(boolean command, boolean proxyCommand, boolean cancelled, String serverName, UUID sender, String senderName, String chatMessage) {
 
         try {
+
+            String proxyName = this.plugin.getProxyName();
+
+            if (proxyName == null) {
+                proxyName = "UNSET";
+            }
 
             JSONObject message = new JSONObject();
 
