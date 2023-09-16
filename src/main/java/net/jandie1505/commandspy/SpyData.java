@@ -38,6 +38,10 @@ public class SpyData {
         return this.targets.contains(playerId);
     }
 
+    public void clearTargets() {
+        this.targets.clear();
+    }
+
     public boolean isSpyChat() {
         return spyChat;
     }

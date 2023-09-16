@@ -213,6 +213,13 @@ public class CommandSpy extends Plugin implements Listener {
     }
 
     public UUID getCachedPlayerId(String playerName) {
+
+        try {
+            return UUID.fromString(playerName);
+        } catch (IllegalArgumentException e) {
+            // continue if not a valid uuid
+        }
+
         ProxiedPlayer player = this.getProxy().getPlayer(playerName);
 
         if (player != null) {

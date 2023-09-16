@@ -79,8 +79,8 @@ public class SpyCommand extends Command implements TabExecutor {
                         .append("\n")
                         .append("All players: ")
                         .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy allPlayers true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy allPlayers " + !spyData.isSpyAllPlayers()))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy all true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
+                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy all " + !spyData.isSpyAllPlayers()))
                         .append(String.valueOf(spyData.isSpyAllPlayers()))
                         .color(spyData.isSpyAllPlayers() ? ChatColor.GREEN : ChatColor.RED)
                         .append("\n")
@@ -155,6 +155,168 @@ public class SpyCommand extends Command implements TabExecutor {
                 sender.sendMessage(text.create());
 
             }
+            case "addPlayer" -> {
+
+                if (args.length < 2) {
+                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy addPlayer <uuid/player>").color(ChatColor.RED).create());
+                    return;
+                }
+
+                UUID playerId = this.plugin.getCachedPlayerId(args[1]);
+
+                if (playerId == null) {
+                    sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                    return;
+                }
+
+                if (spyData.getTargets().contains(playerId)) {
+                    sender.sendMessage(new ComponentBuilder().append("Target already added").color(ChatColor.RED).create());
+                    return;
+                }
+
+                spyData.addTarget(playerId);
+                sender.sendMessage(new ComponentBuilder().append("Target successfully added").color(ChatColor.GREEN).create());
+
+            }
+            case "removePlayer" -> {
+
+                if (args.length < 2) {
+                    sender.sendMessage(new ComponentBuilder().append("Usage: /spy removePlayer <uuid/player>").color(ChatColor.RED).create());
+                    return;
+                }
+
+                UUID playerId = this.plugin.getCachedPlayerId(args[1]);
+
+                if (playerId == null) {
+                    sender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                    return;
+                }
+
+                if (!spyData.getTargets().contains(playerId)) {
+                    sender.sendMessage(new ComponentBuilder().append("Target not in target list").color(ChatColor.RED).create());
+                    return;
+                }
+
+                spyData.removeTarget(playerId);
+                sender.sendMessage(new ComponentBuilder().append("Target successfully removed").color(ChatColor.GREEN).create());
+
+            }
+            case "clearPlayers" -> {
+
+                spyData.clearTargets();
+                sender.sendMessage(new ComponentBuilder().append("Target list cleared").color(ChatColor.GREEN).create());
+
+            }
+            case "all" -> {
+
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Spy all players")
+                        .color(ChatColor.GRAY);
+
+                if (args.length > 1) {
+
+                    spyData.setSpyAllPlayers(Boolean.parseBoolean(args[1]));
+                    text.append(" was set to ").color(ChatColor.GRAY);
+
+                } else {
+
+                    text.append(": ").color(ChatColor.GRAY);
+
+                }
+
+                text.append(String.valueOf(spyData.isSpyAllPlayers())).color(spyData.isSpyAllPlayers() ? ChatColor.GREEN : ChatColor.RED);
+
+                sender.sendMessage(text.create());
+
+            }
+            case "currentServer" -> {
+
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Spy current server")
+                        .color(ChatColor.GRAY);
+
+                if (args.length > 1) {
+
+                    spyData.setSpyCurrentServerPlayers(Boolean.parseBoolean(args[1]));
+                    text.append(" was set to ").color(ChatColor.GRAY);
+
+                } else {
+
+                    text.append(": ").color(ChatColor.GRAY);
+
+                }
+
+                text.append(String.valueOf(spyData.isSpyCurrentServerPlayers())).color(spyData.isSpyCurrentServerPlayers() ? ChatColor.GREEN : ChatColor.RED);
+
+                sender.sendMessage(text.create());
+
+            }
+            case "commands" -> {
+
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Spy on commands")
+                        .color(ChatColor.GRAY);
+
+                if (args.length > 1) {
+
+                    spyData.setSpyCommands(Boolean.parseBoolean(args[1]));
+                    text.append(" was set to ").color(ChatColor.GRAY);
+
+                } else {
+
+                    text.append(": ").color(ChatColor.GRAY);
+
+                }
+
+                text.append(String.valueOf(spyData.isSpyCommands())).color(spyData.isSpyCommands() ? ChatColor.GREEN : ChatColor.RED);
+
+                sender.sendMessage(text.create());
+
+            }
+            case "proxyCommands" -> {
+
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Spy on proxy commands")
+                        .color(ChatColor.GRAY);
+
+                if (args.length > 1) {
+
+                    spyData.setSpyProxyCommands(Boolean.parseBoolean(args[1]));
+                    text.append(" was set to ").color(ChatColor.GRAY);
+
+                } else {
+
+                    text.append(": ").color(ChatColor.GRAY);
+
+                }
+
+                text.append(String.valueOf(spyData.isSpyProxyCommands())).color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
+
+                sender.sendMessage(text.create());
+
+            }
+            case "chat" -> {
+
+                ComponentBuilder text = new ComponentBuilder()
+                        .append("Spy on chat")
+                        .color(ChatColor.GRAY);
+
+                if (args.length > 1) {
+
+                    spyData.setSpyChat(Boolean.parseBoolean(args[1]));
+                    text.append(" was set to ").color(ChatColor.GRAY);
+
+                } else {
+
+                    text.append(": ").color(ChatColor.GRAY);
+
+                }
+
+                text.append(String.valueOf(spyData.isSpyChat())).color(spyData.isSpyChat() ? ChatColor.GREEN : ChatColor.RED);
+
+                sender.sendMessage(text.create());
+
+            }
             default -> sender.sendMessage(new ComponentBuilder().append("Unknown subcommand").color(ChatColor.RED).create());
         }
 
@@ -173,7 +335,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
         switch (args.length) {
             case 1 -> {
-                return List.of("info", "addPlayer", "removePlayer", "getPlayers", "allPlayers", "currentServer", "commands", "proxyCommands", "chat", "help");
+                return List.of("info", "addPlayer", "removePlayer", "clearPlayers", "getPlayers", "all", "currentServer", "commands", "proxyCommands", "chat");
             }
             case 2 -> {
 
@@ -213,7 +375,7 @@ public class SpyCommand extends Command implements TabExecutor {
 
                         return List.copyOf(players);
                     }
-                    case "allPlayers", "currentServer", "commands", "proxyCommands", "chat" -> {
+                    case "all", "currentServer", "commands", "proxyCommands", "chat" -> {
                         return List.of("false", "true");
                     }
                     default -> {
