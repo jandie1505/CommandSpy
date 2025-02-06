@@ -1,5 +1,6 @@
 package net.jandie1505.commandspy;
 
+import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.command.CommandExecuteEvent;
 import com.velocitypowered.api.event.player.PlayerChatEvent;
@@ -9,6 +10,7 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
+import net.jandie1505.commandspy.commands.SpyCommand;
 import net.jandie1505.commandspy.data.SpyData;
 import net.jandie1505.commandspy.data.SpyEvent;
 import net.jandie1505.commandspy.redisbungee.RedisBungeeHook;
@@ -19,10 +21,12 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.inject.Inject;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(
         id = "net-jandie1505-commandspy",
@@ -129,6 +133,30 @@ public class CommandSpy {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
 
+        this.proxy.getScheduler().buildTask(this, () -> {
+
+            for (UUID playerId : Map.copyOf(this.spyingPlayers).keySet()) {
+
+                Player player = this.proxy.getPlayer(playerId).orElse(null);
+                if (player == null) {
+                    this.spyingPlayers.remove(playerId);
+                    continue;
+                }
+
+                if (!player.hasPermission("commandspy.use")) {
+                    this.spyingPlayers.remove(playerId);
+                    continue;
+                }
+
+            }
+
+        }).repeat(30, TimeUnit.SECONDS).schedule();
+
+        this.proxy.getCommandManager().register(
+                this.proxy.getCommandManager().metaBuilder("spy").build(),
+                new SpyCommand(this)
+        );
+
         if (this.redisBungeeHook != null) {
             this.proxy.getEventManager().register(this.redisBungeeHook, this);
         }
@@ -178,9 +206,40 @@ public class CommandSpy {
 
     // ----- OTHER -----
 
+    public ProxyServer getProxy() {
+        return proxy;
+    }
+
     public Logger getLogger() {
         return logger;
     }
+
+    public Map<UUID, SpyData> getSpyingPlayers() {
+        return spyingPlayers;
+    }
+
+    public SpyData getSpyingPlayer(@NotNull UUID playerId) {
+        return this.spyingPlayers.computeIfAbsent(playerId, k -> new SpyData());
+    }
+
+    public UUID getPlayerId(String playerName) {
+
+        try {
+            return UUID.fromString(playerName);
+        } catch (IllegalArgumentException e) {
+            // continue if not a valid uuid
+        }
+
+        Player player = this.getProxy().getPlayer(playerName).orElse(null);
+
+        if (player != null) {
+            return player.getUniqueId();
+        }
+
+        return null;
+    }
+
+    // ----- UTILITIES -----
 
     public static @Nullable String getServerName(@NotNull Player player) {
         ServerConnection connection = player.getCurrentServer().orElse(null);
