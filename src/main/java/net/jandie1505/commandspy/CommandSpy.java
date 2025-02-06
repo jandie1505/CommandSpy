@@ -1,413 +1,204 @@
 package net.jandie1505.commandspy;
 
-import com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI;
-import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
-import net.jandie1505.commandspy.commands.SpyCommand;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.command.CommandExecuteEvent;
+import com.velocitypowered.api.event.player.PlayerChatEvent;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.plugin.Dependency;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.proxy.ServerConnection;
 import net.jandie1505.commandspy.data.SpyData;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.event.ChatEvent;
-import net.md_5.bungee.api.event.PlayerDisconnectEvent;
-import net.md_5.bungee.api.plugin.Listener;
-import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.event.EventHandler;
-import org.json.JSONException;
-import org.json.JSONObject;
+import net.jandie1505.commandspy.data.SpyEvent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
+import javax.inject.Inject;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
-public class CommandSpy extends Plugin implements Listener {
-    private JSONObject config;
-    private Map<UUID, SpyData> spyingPlayers;
-
-    @Override
-    public void onEnable() {
-
-        // INIT
-
-        this.config = new JSONObject();
-
-        this.spyingPlayers = Collections.synchronizedMap(new HashMap<>());
-
-        // CONFIG
-
-        File configFile = new File(this.getDataFolder(), "config.json");
-
-        if (!configFile.exists()) {
-
-            try {
-                configFile.getParentFile().mkdirs();
-                configFile.createNewFile();
-            } catch (IOException e) {
-                this.getLogger().warning("Could not load config");
-            }
-
+@Plugin(
+        id = "net-jandie1505-commandspy",
+        name = "CommandSpy",
+        version = "1.0-SNAPSHOT",
+        url = "https://github.com/jandie1505/CommandSpy",
+        description = "Allows admins to spy on commands players use",
+        authors = {"jandie1505"},
+        dependencies = {
+                @Dependency(
+                        id = "redisbungee",
+                        optional = true
+                )
         }
+)
+public class CommandSpy {
+    private final ProxyServer proxy;
+    private final Logger logger;
+    private final SpyData consoleSpyData;
+    private final Map<UUID, SpyData> spyingPlayers;
+    @Nullable private final RedisBungeeHook redisBungeeHook;
 
-        this.loadConfig(configFile);
-        this.saveConfig(configFile);
-
-        // REDIS
-
-        if (this.isRedisBungeeLoaded()) {
-            RedisBungeeAPI.getRedisBungeeApi().registerPubSubChannels("net.jandie1505.commandspy");
-        }
-
-        // LISTENER
-
-        this.getProxy().getPluginManager().registerListener(this, this);
-
-        // COMMANDS
-
-        this.getProxy().getPluginManager().registerCommand(this, new SpyCommand(this));
-
-        // TASKS
-
-        this.getProxy().getScheduler().schedule(this, () -> {
-
-            for (UUID playerId : Map.copyOf(this.spyingPlayers).keySet()) {
-                ProxiedPlayer player = this.getProxy().getPlayer(playerId);
-
-                if (player == null) {
-                    this.spyingPlayers.remove(playerId);
-                }
-
-            }
-
-        }, 1, 30, TimeUnit.SECONDS);
-
-        // FINISHED
-
+    @Inject
+    public CommandSpy(ProxyServer proxyServer, Logger logger) {
+        this.proxy = proxyServer;
+        this.logger = logger;
+        this.consoleSpyData = new SpyData();
+        this.spyingPlayers = new HashMap<>();
+        this.redisBungeeHook = isRedisBungeeAvail() ? new RedisBungeeHook(this) : null;
     }
 
-    @Override
-    public void onDisable() {
+    // ----- SPY EVENT -----
 
-        this.spyingPlayers = null;
+    /**
+     * This is called when an event listener creates a new spy event.<br/>
+     * This will send the event to all other proxies and call the handle method on this proxy.
+     * @param event spy event
+     */
+    private void sendSpyEvent(@NotNull SpyEvent event) {
 
-    }
+        this.handleSpyEvent(event);
 
-    public void loadConfig(File file) {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-
-            StringBuilder sb = new StringBuilder();
-            String line = br.readLine();
-
-            while (line != null) {
-                sb.append(line);
-                sb.append(System.lineSeparator());
-                line = br.readLine();
-            }
-
-            String out = sb.toString();
-
-            JSONObject jsonConfig = new JSONObject(out);
-
-            for (String key : jsonConfig.keySet()) {
-                this.config.put(key, jsonConfig.get(key));
-            }
-
-            this.getLogger().fine("Config loaded");
-        } catch (IOException | JSONException e) {
-            this.getLogger().warning("Failed to load config");
-        }
-    }
-
-    public void saveConfig(File file) {
-        try {
-            FileWriter writer = new FileWriter(file);
-            writer.write(this.config.toString(4));
-            writer.flush();
-            writer.close();
-
-            this.getLogger().fine("Config saved");
-        } catch (IOException e) {
-            this.getLogger().warning("Failed to save config");
-        }
-    }
-
-    public SpyData getSpyData(UUID playerId) {
-        SpyData spyData = this.spyingPlayers.get(playerId);
-
-        if (spyData == null) {
-            spyData = new SpyData();
-            this.spyingPlayers.put(playerId, spyData);
+        if (redisBungeeHook != null) {
+            this.redisBungeeHook.sendSpyEvent(event);
         }
 
-        return spyData;
     }
 
     /**
-     * Spy event.
-     * This method will be called by the event listener or the redis system.
-     * @param proxyName Name of the proxy (null for this proxy)
-     * @param command If the event is a command
-     * @param proxyCommand If the event is a valid proxy command
-     * @param cancelled If the event has been cancelled
-     * @param serverName The server name (not null)
-     * @param sender The uuid of the sender (not null)
-     * @param senderName The name of the sender (can be null)
-     * @param message The message (not null)
+     * This method handles a spy event.<br/>
+     * This is either called from sendSpyEvent, or if a spy event is sent from another proxy through redis.
+     * @param event spy event
      */
-    public void spyEvent(final String proxyName, final boolean command, final boolean proxyCommand, final boolean cancelled, final String serverName, final UUID sender, final String senderName, final String message) {
+    public void handleSpyEvent(@NotNull SpyEvent event) {
 
-        if (serverName == null || sender == null || message == null) {
-            return;
-        }
+        for (Map.Entry<UUID, SpyData> entry : this.spyingPlayers.entrySet()) {
+            Player player = this.proxy.getPlayer(entry.getKey()).orElse(null);
+            if (player == null) continue;
+            if (!entry.getValue().isSpyingOn(this.proxy, player, event)) continue;
 
-        for (ProxiedPlayer player : List.copyOf(this.getProxy().getPlayers())) {
+            Component message = Component.empty()
+                    .append(Component.text("[", NamedTextColor.GRAY))
+                    .append(Component.text("SPY", NamedTextColor.GOLD))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .appendSpace()
+                    .append(Component.text("[", NamedTextColor.GRAY))
+                    .append(Component.text(event.proxy(), NamedTextColor.AQUA))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .appendSpace()
+                    .append(Component.text("[", NamedTextColor.GRAY))
+                    .append(Component.text(event.server(), NamedTextColor.AQUA))
+                    .append(Component.text("]", NamedTextColor.GRAY))
+                    .appendSpace()
+                    .append(Component.text("[", NamedTextColor.GRAY));
 
-            if (!player.hasPermission("commandspy.spy")) {
-                continue;
+            switch (event.type()) {
+                case CHAT_MESSAGE -> message = message.append(Component.text("CHAT", NamedTextColor.YELLOW));
+                case PROXY_COMMAND -> message = message.append(Component.text("PROXY COMMAND", NamedTextColor.DARK_AQUA));
+                case SERVER_COMMAND -> message = message.append(Component.text("SERVER COMMAND", NamedTextColor.DARK_AQUA));
             }
 
-            SpyData spyData = this.getSpyData(player.getUniqueId());
+            message = message.append(Component.text("]", NamedTextColor.GRAY)).appendSpace();
 
-            if (!command && !proxyCommand && !spyData.isSpyChat()) {
-                continue;
+            Player target = this.proxy.getPlayer(entry.getKey()).orElse(null);
+            String targetName = target != null ? target.getUsername() : event.sender().toString();
+
+            message = message.append(Component.text(targetName + ":", NamedTextColor.GRAY)).appendNewline()
+                    .append(Component.text("- Content: " + event.content(), NamedTextColor.GRAY)).appendNewline();
+
+            String response = event.result().orElse(null);
+            if (response != null) {
+                message = message.append(Component.text("- Response: " + response, NamedTextColor.GRAY)).appendNewline();
             }
 
-            if (command && !proxyCommand && !spyData.isSpyCommands()) {
-                continue;
-            }
+            message = message.append(Component.text("- Allowed: " + event.allowed(), NamedTextColor.GRAY));
 
-            if (proxyCommand && !spyData.isSpyProxyCommands()) {
-                continue;
-            }
-
-            if (!spyData.isSpyAllPlayers() && !(spyData.isSpyCurrentServerPlayers() && player.getServer().getInfo().getName().equals(serverName)) && !spyData.isTarget(sender)) {
-                continue;
-            }
-
-            ComponentBuilder text = new ComponentBuilder()
-                    .append("[")
-                    .color(ChatColor.GRAY)
-                    .append("SPY")
-                    .color(ChatColor.GOLD)
-                    .append("] [")
-                    .color(ChatColor.GRAY);
-
-            if (proxyName == null) {
-
-                if (this.isRedisBungeeLoaded()) {
-                    text.append(RedisBungeeAPI.getRedisBungeeApi().getProxyId()).color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Current Proxy").create()));
-                    text.append("] [").color(ChatColor.GRAY);
-                }
-
-            } else {
-
-                if (!proxyName.equals("")) {
-                    text.append(proxyName).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Other Proxy").create()));
-                } else {
-                    text.append("EXT").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Other Proxy (with empty name)").create()));
-                }
-
-                text.color(ChatColor.DARK_AQUA);
-                text.append("] [").color(ChatColor.GRAY);
-
-            }
-
-            text.append(serverName);
-
-            if (serverName.equals(player.getServer().getInfo().getName())) {
-                text.color(ChatColor.AQUA);
-            } else {
-                text.color(ChatColor.DARK_AQUA);
-            }
-
-            text.append("] [").color(ChatColor.GRAY);
-
-            if (proxyCommand) {
-                text.append("COMMAND").color(ChatColor.AQUA).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Proxy Command").color(ChatColor.GOLD).create()));
-            } else if (command) {
-                text.append("COMMAND").color(ChatColor.DARK_AQUA);
-            } else {
-                text.append("CHAT").color(ChatColor.YELLOW);
-            }
-
-            text.append("] ").color(ChatColor.GRAY);
-
-            ProxiedPlayer otherPlayer = this.getProxy().getPlayer(sender);
-
-            if (sender == null) {
-                text.append(senderName);
-            } else {
-                text.append(otherPlayer.getName());
-            }
-
-            text.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("UUID: " + sender + "\nOn this proxy: " + (otherPlayer != null)).create()));
-            text.color(ChatColor.GRAY);
-            text.append(": ").color(ChatColor.GRAY);
-            text.append(message).color(ChatColor.GRAY);
-
-            if (cancelled) {
-                text.strikethrough(true);
-                text.append(" cancelled").color(ChatColor.RED);
-            }
-
-            player.sendMessage(text.create());
-
+            player.sendMessage(message);
         }
 
     }
 
-    public boolean isRedisBungeeLoaded() {
+    // ----- EVENT LISTENERS -----
 
+    @Subscribe
+    public void onProxyInitialization(ProxyInitializeEvent event) {
+
+        if (this.redisBungeeHook != null) {
+            this.proxy.getEventManager().register(this.redisBungeeHook, this);
+        }
+
+    }
+
+    @Subscribe(priority = Short.MAX_VALUE)
+    public void onCommandExecute(CommandExecuteEvent event) {
+        if (!(event.getCommandSource() instanceof Player player)) return;
+
+        String proxy = getProxyName();
+        if (proxy == null) proxy = "Proxy";
+
+        String server = getServerName(player);
+        if (server == null) server = "unknown";
+
+        this.sendSpyEvent(new SpyEvent(
+                event.getResult().isForwardToServer() ? SpyEvent.Type.SERVER_COMMAND : SpyEvent.Type.PROXY_COMMAND,
+                proxy,
+                server,
+                player.getUniqueId(),
+                event.getCommand(),
+                event.getResult().getCommand(),
+                event.getResult().isAllowed()
+        ));
+    }
+
+    @Subscribe(priority = Short.MAX_VALUE)
+    public void onPlayerChat(PlayerChatEvent event) {
+
+        String proxy = getProxyName();
+        if (proxy == null) proxy = "Proxy";
+
+        String server = getServerName(event.getPlayer());
+        if (server == null) server = "unknown";
+
+        this.sendSpyEvent(new SpyEvent(
+                SpyEvent.Type.CHAT_MESSAGE,
+                proxy,
+                server,
+                event.getPlayer().getUniqueId(),
+                event.getMessage(),
+                Optional.empty(),
+                event.getResult().isAllowed()
+        ));
+    }
+
+    // ----- OTHER -----
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public static @Nullable String getServerName(@NotNull Player player) {
+        ServerConnection connection = player.getCurrentServer().orElse(null);
+        if (connection == null) return null;
+        return connection.getServerInfo().getName();
+    }
+
+    public static @Nullable String getProxyName() {
+        if (!isRedisBungeeAvail()) return null;
+        return RedisBungeeHook.getProxyName();
+    }
+
+    public static boolean isRedisBungeeAvail() {
         try {
             Class.forName("com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI");
             return true;
         } catch (ClassNotFoundException e) {
             return false;
         }
-
-    }
-
-    /**
-     * Sends a spy event.
-     */
-    public void sendRedisSpyEvent(boolean command, boolean proxyCommand, boolean cancelled, String serverName, UUID sender, String senderName, String chatMessage) {
-
-        if (!isRedisBungeeLoaded()) {
-            return;
-        }
-
-        try {
-
-            JSONObject message = new JSONObject();
-
-            message.put("command", command);
-            message.put("proxyCommand", proxyCommand);
-            message.put("cancelled", cancelled);
-            message.put("serverName", serverName);
-            message.put("sender", sender.toString());
-            message.put("senderName", senderName);
-            message.put("message", chatMessage);
-
-            JSONObject json = new JSONObject();
-
-            json.put("proxy", RedisBungeeAPI.getRedisBungeeApi().getProxyId());
-            json.put("type", "spyEvent");
-            json.put("message", message);
-
-            RedisBungeeAPI.getRedisBungeeApi().sendChannelMessage("net.jandie1505.commandspy", json.toString());
-
-        } catch (Exception e) {
-            this.getLogger().log(Level.WARNING, "Could not send redis message", e);
-        }
-
-    }
-
-    public UUID getPlayerId(String playerName) {
-
-        try {
-            return UUID.fromString(playerName);
-        } catch (IllegalArgumentException e) {
-            // continue if not a valid uuid
-        }
-
-        ProxiedPlayer player = this.getProxy().getPlayer(playerName);
-
-        if (player != null) {
-            return player.getUniqueId();
-        }
-
-        return null;
-    }
-
-    /**
-     * This method handles the local command spy.
-     */
-    @EventHandler
-    public void onChat(ChatEvent event) {
-
-        if (!(event.getSender() instanceof ProxiedPlayer)) {
-            return;
-        }
-
-        ProxiedPlayer sender = (ProxiedPlayer) event.getSender();
-
-        this.spyEvent(null, event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
-
-        this.getProxy().getScheduler().runAsync(this, () -> {
-
-            if (this.isRedisBungeeLoaded()) {
-                this.sendRedisSpyEvent(event.isCommand(), event.isProxyCommand(), event.isCancelled(), sender.getServer().getInfo().getName(), sender.getUniqueId(), sender.getName(), event.getMessage());
-            }
-
-        });
-
-    }
-
-    @EventHandler
-    public void onDisconnect(PlayerDisconnectEvent event) {
-        this.spyingPlayers.remove(event.getPlayer().getUniqueId());
-    }
-
-    @EventHandler
-    public void onPubSubMessage(PubSubMessageEvent event) {
-
-        if (!event.getChannel().equals("net.jandie1505.commandspy")) {
-            return;
-        }
-
-        try {
-
-            JSONObject json = new JSONObject(event.getMessage());
-
-            if (json.optString("type") == null) {
-                return;
-            }
-
-            if (json.optJSONObject("message") == null) {
-                return;
-            }
-
-            String proxy = json.optString("proxy");
-
-            if (proxy == null || proxy.equals(RedisBungeeAPI.getRedisBungeeApi().getProxyId())) {
-                return;
-            }
-
-            String type = json.optString("type");
-            JSONObject message = json.optJSONObject("message");
-
-            switch (type) {
-                case "spyEvent" -> {
-
-                    boolean command = message.optBoolean("command", false);
-                    boolean proxyCommand = message.optBoolean("proxyCommand", false);
-                    boolean cancelled = message.optBoolean("cancelled", false);
-                    String serverName = message.optString("serverName");
-                    UUID sender;
-
-                    try {
-                        sender = UUID.fromString(message.optString("sender", ""));
-                    } catch (IllegalArgumentException e) {
-                        return;
-                    }
-
-                    String senderName = message.optString("senderName");
-                    String chatMessage = message.optString("message");
-
-                    if (serverName == null || sender == null || senderName == null || chatMessage == null) {
-                        return;
-                    }
-
-                    this.spyEvent(proxy, command, proxyCommand, cancelled, serverName, sender, senderName, chatMessage);
-
-                }
-            }
-
-        } catch (Exception e) {
-            this.getLogger().log(Level.WARNING, "Exception while decoding redis message", e);
-        }
-
     }
 
 }

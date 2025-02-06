@@ -1,4 +1,4 @@
-main: net.jandie1505.commandspy.CommandSpy
+main: net.jandie1505.commandspy.old.CommandSpy
 name: CommandSpy
 version: '1.0'
 softDepends: ['RedisBungee']
