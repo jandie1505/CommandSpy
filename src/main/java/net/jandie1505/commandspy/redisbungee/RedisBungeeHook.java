@@ -1,8 +1,9 @@
-package net.jandie1505.commandspy;
+package net.jandie1505.commandspy.redisbungee;
 
 import com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI;
 import com.imaginarycode.minecraft.redisbungee.events.PubSubMessageEvent;
 import com.velocitypowered.api.event.Subscribe;
+import net.jandie1505.commandspy.CommandSpy;
 import net.jandie1505.commandspy.data.SpyEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

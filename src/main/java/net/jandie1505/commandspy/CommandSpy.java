@@ -11,6 +11,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.ServerConnection;
 import net.jandie1505.commandspy.data.SpyData;
 import net.jandie1505.commandspy.data.SpyEvent;
+import net.jandie1505.commandspy.redisbungee.RedisBungeeHook;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.jetbrains.annotations.NotNull;
