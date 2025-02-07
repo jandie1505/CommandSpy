@@ -158,9 +158,10 @@ public class CommandSpy {
         );
 
         if (this.redisBungeeHook != null) {
-            this.proxy.getEventManager().register(this.redisBungeeHook, this);
+            this.proxy.getEventManager().register(this, this.redisBungeeHook);
         }
 
+        this.logger.info("CommandSpy (by jandie1505) has been initialized.");
     }
 
     @Subscribe(priority = Short.MAX_VALUE)
