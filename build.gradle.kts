@@ -23,12 +23,12 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
     compileOnly("com.github.ProxioDev.ValioBungee:RedisBungee-Velocity:0.12.3")
+    implementation("org.json:json:20250107")
 }
 
 tasks {
     shadowJar {
-        //relocate("net.chaossquad.mclib", "net.jandie1505.bedwars.dependencies.net.chaossquad.mclib")
-        //relocate("org.json", "net.jandie1505.bedwars.dependencies.org.json")
+        relocate("org.json", "net.jandie1505.commandspy.dependencies.org.json")
     }
     build {
         dependsOn(shadowJar)
