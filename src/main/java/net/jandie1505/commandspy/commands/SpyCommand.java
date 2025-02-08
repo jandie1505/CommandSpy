@@ -1,50 +1,52 @@
 package net.jandie1505.commandspy.commands;
 
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.proxy.Player;
 import net.jandie1505.commandspy.CommandSpy;
 import net.jandie1505.commandspy.data.SpyData;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-import net.md_5.bungee.api.plugin.TabExecutor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-public class SpyCommand extends Command implements TabExecutor {
-    private final CommandSpy plugin;
+public class SpyCommand implements SimpleCommand {
+    @NotNull private final CommandSpy plugin;
 
-    public SpyCommand(CommandSpy plugin) {
-        super("spy", "commandspy.spy");
+    public SpyCommand(@NotNull CommandSpy plugin) {
         this.plugin = plugin;
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
+    public void execute(Invocation invocation) {
 
-        CommandSender messageSender = sender;
+        CommandSource sender = invocation.source();
+        CommandSource messageSender = sender;
+        String[] args = Arrays.copyOf(invocation.arguments(), invocation.arguments().length);
 
-        if (sender == this.plugin.getProxy().getConsole()) {
+        if (sender == this.plugin.getProxy().getConsoleCommandSource()) {
 
             if (args.length < 1) {
-                messageSender.sendMessage(new ComponentBuilder().append("Console Usage: spy <PLAYER> info/addPlayer/removePlayer/allPlayers/currentServer/commands/proxyCommands/chat [args]").color(ChatColor.RED).create());
+                messageSender.sendMessage(Component.text("Console Usage: spy <PLAYER> info/addPlayer/removePlayer/allPlayers/currentServer/commands/proxyCommands/chat [args]", NamedTextColor.RED));
                 return;
             }
 
-            ProxiedPlayer player;
+            Player player;
 
             try {
-                player = this.plugin.getProxy().getPlayer(UUID.fromString(args[0]));
+                player = this.plugin.getProxy().getPlayer(UUID.fromString(args[0])).orElse(null);
             } catch (IllegalArgumentException e) {
-                player = this.plugin.getProxy().getPlayer(args[0]);
+                player = this.plugin.getProxy().getPlayer(args[0]).orElse(null);
             }
 
             if (player == null) {
-                messageSender.sendMessage(new ComponentBuilder().append("Player not found").color(ChatColor.RED).create());
+                messageSender.sendMessage(Component.text("Player not found", NamedTextColor.RED));
                 return;
             }
 
@@ -56,11 +58,11 @@ public class SpyCommand extends Command implements TabExecutor {
             args = newArgs;
 
             sender = player;
-            messageSender = this.plugin.getProxy().getConsole();
+            messageSender = this.plugin.getProxy().getConsoleCommandSource();
 
         }
 
-        if (!(sender instanceof ProxiedPlayer)) {
+        if (!(sender instanceof Player player)) {
             return;
         }
 
@@ -68,315 +70,350 @@ public class SpyCommand extends Command implements TabExecutor {
             args = new String[]{"info"};
         }
 
-        SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
+        SpyData spyData = this.plugin.getSpyingPlayer(player.getUniqueId());
 
         switch (args[0]) {
             case "info" -> {
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spying targets:")
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("The selection from which players events are shown").color(ChatColor.GRAY).create()))
-                        .color(ChatColor.GOLD)
-                        .append("\n")
-                        .append("All players: ")
-                        .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy all true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy all " + !spyData.isSpyAllPlayers()))
-                        .append(String.valueOf(spyData.isSpyAllPlayers()))
-                        .color(spyData.isSpyAllPlayers() ? ChatColor.GREEN : ChatColor.RED)
-                        .append("\n")
-                        .append("Current server: ")
-                        .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy currentserver true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy currentserver " + !spyData.isSpyCurrentServerPlayers()))
-                        .append(String.valueOf(spyData.isSpyCurrentServerPlayers()))
-                        .color(spyData.isSpyCurrentServerPlayers() ? ChatColor.GREEN : ChatColor.RED)
-                        .append("\n")
-                        .append("Custom targets: ")
-                        .color(ChatColor.GRAY)
-                        .append(spyData.getTargets().size() + " targets")
-                        .color((spyData.getTargets().size() > 0) ? ChatColor.AQUA : ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy getplayers").color(ChatColor.AQUA).append(" to see a list").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy getplayers"));
+                Component text1 = Component.empty()
+                        .append(Component.text("Spying targets:", NamedTextColor.GOLD)
+                                .hoverEvent(HoverEvent.showText(Component.text("The selection from which players events are shown", NamedTextColor.GRAY)))
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("All players: ")
+                                .color(NamedTextColor.GRAY) // gray color
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ").color(NamedTextColor.GRAY)
+                                        .append(Component.text("/spy all true/false", NamedTextColor.AQUA))
+                                        .append(Component.text(" to edit").color(NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy all " + !spyData.isSpyAllPlayers()))
+                                .append(Component.text(String.valueOf(spyData.isSpyAllPlayers()))
+                                        .color(spyData.isSpyAllPlayers() ? NamedTextColor.GREEN : NamedTextColor.RED))
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("Current server: ")
+                                .color(NamedTextColor.GRAY)
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ").color(NamedTextColor.GRAY)
+                                        .append(Component.text("/spy currentserver true/false", NamedTextColor.AQUA))
+                                        .append(Component.text(" to edit").color(NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy currentserver " + !spyData.isSpyCurrentServerPlayers()))
+                                .append(Component.text(String.valueOf(spyData.isSpyCurrentServerPlayers()))
+                                        .color(spyData.isSpyCurrentServerPlayers() ? NamedTextColor.GREEN : NamedTextColor.RED))
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("Custom targets: ")
+                                .color(NamedTextColor.GRAY) // gray color
+                                .append(Component.text(spyData.getTargets().size() + " targets")
+                                        .color(!spyData.getTargets().isEmpty() ? NamedTextColor.AQUA : NamedTextColor.GRAY))
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ").color(NamedTextColor.GRAY)
+                                        .append(Component.text("/spy getplayers", NamedTextColor.AQUA))
+                                        .append(Component.text(" to see a list", NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy getplayers"))
+                        );
 
-                ComponentBuilder text2 = new ComponentBuilder()
-                        .append("Spying filter:")
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("The type of events that should be shown").color(ChatColor.GRAY).create()))
-                        .color(ChatColor.GOLD)
-                        .append("\n")
-                        .append("Chat messages: ")
-                        .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy chat true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy chat " + !spyData.isSpyChat()))
-                        .append(String.valueOf(spyData.isSpyChat()))
-                        .color(spyData.isSpyChat() ? ChatColor.GREEN : ChatColor.RED)
-                        .append("\n")
-                        .append("Commands: ")
-                        .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy commands true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy commands " + !spyData.isSpyCommands()))
-                        .append(String.valueOf(spyData.isSpyCommands()))
-                        .color(spyData.isSpyCommands() ? ChatColor.GREEN : ChatColor.RED)
-                        .append("\n")
-                        .append("Proxy Commands: ")
-                        .color(ChatColor.GRAY)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("Use ").color(ChatColor.GRAY).append("/spy proxycommands true/false").color(ChatColor.AQUA).append(" to edit").color(ChatColor.GRAY).create()))
-                        .event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/spy proxycommands " + !spyData.isSpyProxyCommands()))
-                        .append(String.valueOf(spyData.isSpyProxyCommands()))
-                        .color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
+                Component text2 = Component.empty()
+                        .append(Component.text("Spying filter:", NamedTextColor.GOLD)
+                                .hoverEvent(HoverEvent.showText(Component.text("The type of events that should be shown", NamedTextColor.GRAY)))
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("Chat messages: ", NamedTextColor.GRAY)
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ", NamedTextColor.GRAY)
+                                        .append(Component.text("/spy chat true/false", NamedTextColor.AQUA))
+                                        .append(Component.text(" to edit", NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy chat " + !spyData.isSpyChat()))
+                                .append(Component.text(String.valueOf(spyData.isSpyChat()))
+                                        .color(spyData.isSpyChat() ? NamedTextColor.GREEN : NamedTextColor.RED)
+                                )
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("Server Commands: ")
+                                .color(NamedTextColor.GRAY)
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ", NamedTextColor.GRAY)
+                                        .append(Component.text("/spy server-commands true/false", NamedTextColor.AQUA))
+                                        .append(Component.text(" to edit", NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy server-commands " + !spyData.isSpyServerCommands()))
+                                .append(Component.text(String.valueOf(spyData.isSpyServerCommands()))
+                                        .color(spyData.isSpyServerCommands() ? NamedTextColor.GREEN : NamedTextColor.RED)
+                                )
+                        )
+                        .append(Component.newline())
+                        .append(Component.text("Proxy Commands: ", NamedTextColor.GRAY)
+                                .hoverEvent(HoverEvent.showText(Component.text("Use ", NamedTextColor.GRAY)
+                                        .append(Component.text("/spy proxy-commands true/false", NamedTextColor.AQUA))
+                                        .append(Component.text(" to edit", NamedTextColor.GRAY)))
+                                )
+                                .clickEvent(ClickEvent.suggestCommand("/spy proxy-commands " + !spyData.isSpyProxyCommands()))
+                                .append(Component.text(String.valueOf(spyData.isSpyProxyCommands()))
+                                        .color(spyData.isSpyProxyCommands() ? NamedTextColor.GREEN : NamedTextColor.RED)
+                                )
+                        );
 
-                messageSender.sendMessage(text.create());
-                messageSender.sendMessage(text2.create());
+                messageSender.sendMessage(text1);
+                messageSender.sendMessage(text2);
 
             }
-            case "getplayers" -> {
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Specific spying targets:")
-                        .color(ChatColor.GOLD)
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder().append("This is a list of the specific spying targets").color(ChatColor.GRAY).create()));
+            case "get-players" -> {
+                Component text = Component.empty()
+                        .append(Component.text("Specific spying targets:")
+                                .color(NamedTextColor.GOLD)
+                                .hoverEvent(HoverEvent.showText(Component.text("This is a list of the specific spying targets").color(NamedTextColor.GRAY)))
+                        );
 
                 if (spyData.getTargets().isEmpty()) {
-                    text.append("\n");
-                    text.append("--- no entries ---").color(ChatColor.GRAY);
+                    text = text.append(Component.newline())
+                            .append(Component.text("--- no entries ---").color(NamedTextColor.GRAY));
                 }
 
                 for (UUID playerId : spyData.getTargets()) {
-                    ProxiedPlayer player = this.plugin.getProxy().getPlayer(playerId);
+                    Player p = this.plugin.getProxy().getPlayer(playerId).orElse(null);
 
-                    text.append("\n");
+                    text = text.append(Component.newline());
 
-                    if (player == null) {
-                        text.append(playerId.toString()).color(ChatColor.GRAY);
+                    if (p == null) {
+                        text = text.append(Component.text(playerId.toString()).color(NamedTextColor.GRAY));
                         continue;
                     }
 
-                    text.append(player.getName()).color(ChatColor.GRAY);
-                    text.append(" (" + playerId + ")").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(p.getUsername()).color(NamedTextColor.GRAY));
+                    text = text.append(Component.text(" (" + playerId + ")").color(NamedTextColor.GRAY));
                 }
 
-                messageSender.sendMessage(text.create());
+                messageSender.sendMessage(text);
 
             }
-            case "addplayer" -> {
+            case "add-player" -> {
 
                 if (args.length < 2) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Usage: /spy addplayer <uuid/player>").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Usage: /spy addplayer <uuid/player>")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Player not found (You might need to use the UUID if the player is on another proxy)")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 if (spyData.getTargets().contains(playerId)) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Target already added").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Target already added")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 spyData.addTarget(playerId);
-                messageSender.sendMessage(new ComponentBuilder().append("Target successfully added").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(Component.text("Target successfully added")
+                        .color(NamedTextColor.GREEN));
 
             }
-            case "removeplayer" -> {
+            case "remove-player" -> {
 
                 if (args.length < 2) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Usage: /spy removeplayer <uuid/player>").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Usage: /spy removeplayer <uuid/player>")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 UUID playerId = this.plugin.getPlayerId(args[1]);
 
                 if (playerId == null) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Player not found (You might need to use the UUID if the player is on another proxy)").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Player not found (You might need to use the UUID if the player is on another proxy)")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 if (!spyData.getTargets().contains(playerId)) {
-                    messageSender.sendMessage(new ComponentBuilder().append("Target not in target list").color(ChatColor.RED).create());
+                    messageSender.sendMessage(Component.text("Target not in target list")
+                            .color(NamedTextColor.RED));
                     return;
                 }
 
                 spyData.removeTarget(playerId);
-                messageSender.sendMessage(new ComponentBuilder().append("Target successfully removed").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(Component.text("Target successfully removed")
+                        .color(NamedTextColor.GREEN));
 
             }
-            case "clearplayers" -> {
+            case "clear-players" -> {
 
                 spyData.clearTargets();
-                messageSender.sendMessage(new ComponentBuilder().append("Target list cleared").color(ChatColor.GREEN).create());
+                messageSender.sendMessage(Component.text("Target list cleared")
+                        .color(NamedTextColor.GREEN));
 
             }
             case "all" -> {
 
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spy all players")
-                        .color(ChatColor.GRAY);
+                Component text = Component.empty()
+                        .append(Component.text("Spy all players", NamedTextColor.GRAY));
 
                 if (args.length > 1) {
-
                     spyData.setSpyAllPlayers(Boolean.parseBoolean(args[1]));
-                    text.append(" was set to ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(" was set to ")
+                            .color(NamedTextColor.GRAY));
                 } else {
-
-                    text.append(": ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(": ")
+                            .color(NamedTextColor.GRAY));
                 }
 
-                text.append(String.valueOf(spyData.isSpyAllPlayers())).color(spyData.isSpyAllPlayers() ? ChatColor.GREEN : ChatColor.RED);
+                text = text.append(Component.text(String.valueOf(spyData.isSpyAllPlayers()))
+                        .color(spyData.isSpyAllPlayers() ? NamedTextColor.GREEN : NamedTextColor.RED));
 
-                messageSender.sendMessage(text.create());
+                messageSender.sendMessage(text);
 
             }
-            case "currentserver" -> {
+            case "current-server" -> {
 
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spy current server")
-                        .color(ChatColor.GRAY);
+                Component text = Component.empty()
+                        .append(Component.text("Spy current server")
+                                .color(NamedTextColor.GRAY));
 
                 if (args.length > 1) {
-
                     spyData.setSpyCurrentServerPlayers(Boolean.parseBoolean(args[1]));
-                    text.append(" was set to ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(" was set to ")
+                            .color(NamedTextColor.GRAY));
                 } else {
-
-                    text.append(": ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(": ")
+                            .color(NamedTextColor.GRAY));
                 }
 
-                text.append(String.valueOf(spyData.isSpyCurrentServerPlayers())).color(spyData.isSpyCurrentServerPlayers() ? ChatColor.GREEN : ChatColor.RED);
+                text = text.append(Component.text(String.valueOf(spyData.isSpyCurrentServerPlayers()))
+                        .color(spyData.isSpyCurrentServerPlayers() ? NamedTextColor.GREEN : NamedTextColor.RED));
 
-                messageSender.sendMessage(text.create());
+
+                messageSender.sendMessage(text);
 
             }
-            case "commands" -> {
+            case "server-commands" -> {
 
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spy on commands")
-                        .color(ChatColor.GRAY);
+                Component text = Component.empty()
+                        .append(Component.text("Spy on server commands")
+                                .color(NamedTextColor.GRAY));
 
                 if (args.length > 1) {
-
-                    spyData.setSpyCommands(Boolean.parseBoolean(args[1]));
-                    text.append(" was set to ").color(ChatColor.GRAY);
-
+                    spyData.setSpyServerCommands(Boolean.parseBoolean(args[1]));
+                    text = text.append(Component.text(" was set to ")
+                            .color(NamedTextColor.GRAY));
                 } else {
-
-                    text.append(": ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(": ")
+                            .color(NamedTextColor.GRAY));
                 }
 
-                text.append(String.valueOf(spyData.isSpyCommands())).color(spyData.isSpyCommands() ? ChatColor.GREEN : ChatColor.RED);
+                text = text.append(Component.text(String.valueOf(spyData.isSpyServerCommands()))
+                        .color(spyData.isSpyServerCommands() ? NamedTextColor.GREEN : NamedTextColor.RED));
 
-                messageSender.sendMessage(text.create());
+                messageSender.sendMessage(text);
 
             }
-            case "proxycommands" -> {
+            case "proxy-commands" -> {
 
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spy on proxy commands")
-                        .color(ChatColor.GRAY);
+                Component text = Component.empty()
+                        .append(Component.text("Spy on proxy commands")
+                                .color(NamedTextColor.GRAY));
 
                 if (args.length > 1) {
-
                     spyData.setSpyProxyCommands(Boolean.parseBoolean(args[1]));
-                    text.append(" was set to ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(" was set to ")
+                            .color(NamedTextColor.GRAY));
                 } else {
-
-                    text.append(": ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(": ")
+                            .color(NamedTextColor.GRAY));
                 }
 
-                text.append(String.valueOf(spyData.isSpyProxyCommands())).color(spyData.isSpyProxyCommands() ? ChatColor.GREEN : ChatColor.RED);
+                text = text.append(Component.text(String.valueOf(spyData.isSpyProxyCommands()))
+                        .color(spyData.isSpyProxyCommands() ? NamedTextColor.GREEN : NamedTextColor.RED));
 
-                messageSender.sendMessage(text.create());
+
+                messageSender.sendMessage(text);
 
             }
             case "chat" -> {
 
-                ComponentBuilder text = new ComponentBuilder()
-                        .append("Spy on chat")
-                        .color(ChatColor.GRAY);
+                Component text = Component.empty()
+                        .append(Component.text("Spy on chat")
+                                .color(NamedTextColor.GRAY));
 
                 if (args.length > 1) {
-
                     spyData.setSpyChat(Boolean.parseBoolean(args[1]));
-                    text.append(" was set to ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(" was set to ")
+                            .color(NamedTextColor.GRAY));
                 } else {
-
-                    text.append(": ").color(ChatColor.GRAY);
-
+                    text = text.append(Component.text(": ")
+                            .color(NamedTextColor.GRAY));
                 }
 
-                text.append(String.valueOf(spyData.isSpyChat())).color(spyData.isSpyChat() ? ChatColor.GREEN : ChatColor.RED);
+                text = text.append(Component.text(String.valueOf(spyData.isSpyChat()))
+                        .color(spyData.isSpyChat() ? NamedTextColor.GREEN : NamedTextColor.RED));
 
-                messageSender.sendMessage(text.create());
+
+                messageSender.sendMessage(text);
 
             }
-            default -> messageSender.sendMessage(new ComponentBuilder().append("Unknown subcommand").color(ChatColor.RED).create());
+            default -> messageSender.sendMessage(Component.text("Unknown subcommand", NamedTextColor.RED));
         }
+
 
     }
 
     @Override
-    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+    public List<String> suggest(Invocation invocation) {
 
-        if (!(sender instanceof ProxiedPlayer)) {
+        if (!(invocation.source() instanceof Player)) {
             return List.of();
         }
 
-        if (!sender.hasPermission("commandspy.spy")) {
+        if (!invocation.source().hasPermission("commandspy.spy")) {
             return List.of();
         }
+
+        CommandSource sender = invocation.source();
+        String[] args = invocation.arguments();
 
         switch (args.length) {
             case 1 -> {
-                return List.of("info", "addplayer", "removeplayer", "clearplayer", "getplayers", "all", "currentserver", "commands", "proxycommands", "chat");
+                return List.of("info", "add-player", "remove-player", "clear-player", "get-players", "all", "current-server", "server-commands", "proxy-commands", "chat");
             }
             case 2 -> {
 
                 switch (args[0]) {
-                    case "addplayer" -> {
-                        SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
+                    case "add-player" -> {
+                        SpyData spyData = this.plugin.getSpyingPlayer(((Player) sender).getUniqueId());
                         List<String> players = new ArrayList<>();
 
-                        for (ProxiedPlayer player : List.copyOf(this.plugin.getProxy().getPlayers())) {
+                        for (Player player : List.copyOf(this.plugin.getProxy().getAllPlayers())) {
 
                             if (spyData.getTargets().contains(player.getUniqueId())) {
                                 continue;
                             }
 
-                            players.add(player.getName());
+                            players.add(player.getUsername());
 
                         }
 
                         return List.copyOf(players);
                     }
-                    case "removeplayer" -> {
-                        SpyData spyData = this.plugin.getSpyData(((ProxiedPlayer) sender).getUniqueId());
+                    case "remove-player" -> {
+                        SpyData spyData = this.plugin.getSpyingPlayer(((Player) sender).getUniqueId());
                         List<String> players = new ArrayList<>();
 
                         for (UUID playerId : spyData.getTargets()) {
-                            ProxiedPlayer player = this.plugin.getProxy().getPlayer(playerId);
+                            Player player = this.plugin.getProxy().getPlayer(playerId).orElse(null);
 
                             if (player == null) {
                                 players.add(playerId.toString());
                                 continue;
                             }
 
-                            players.add(player.getName());
+                            players.add(player.getUsername());
 
                         }
 
                         return List.copyOf(players);
                     }
-                    case "all", "currentserver", "commands", "proxycommands", "chat" -> {
+                    case "all", "current-server", "server-commands", "proxy-commands", "chat" -> {
                         return List.of("false", "true");
                     }
                     default -> {
@@ -389,6 +426,11 @@ public class SpyCommand extends Command implements TabExecutor {
                 return List.of();
             }
         }
-
     }
+
+    public @NotNull CommandSpy getPlugin() {
+        return plugin;
+    }
+
 }
+
