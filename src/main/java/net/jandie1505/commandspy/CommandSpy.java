@@ -110,7 +110,7 @@ public class CommandSpy {
 
             message = message.append(Component.text("]", NamedTextColor.GRAY)).appendSpace();
 
-            Player target = this.proxy.getPlayer(entry.getKey()).orElse(null);
+            Player target = this.proxy.getPlayer(event.sender()).orElse(null);
             String targetName = target != null ? target.getUsername() : event.sender().toString();
 
             message = message.append(Component.text(targetName + ":", NamedTextColor.GRAY)).appendNewline()
