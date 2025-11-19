@@ -70,7 +70,13 @@ public class CommandSpy {
         this.handleSpyEvent(event);
 
         if (redisBungeeHook != null) {
-            this.redisBungeeHook.sendSpyEvent(event);
+
+            try {
+                this.redisBungeeHook.sendSpyEvent(event);
+            } catch (Exception e) {
+                this.logger.warn("Failed to send spy event to redisbungee", e);
+            }
+
         }
 
     }
