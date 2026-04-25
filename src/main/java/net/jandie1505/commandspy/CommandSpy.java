@@ -1,5 +1,6 @@
 package net.jandie1505.commandspy;
 
+import com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.command.CommandExecuteEvent;
@@ -261,8 +262,8 @@ public class CommandSpy {
 
     public static boolean isRedisBungeeAvail() {
         try {
-            Class.forName("com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI");
-            return true;
+            Class.forName("com.imaginarycode.minecraft.redisbungee.RedisBungeeAPI"); // Check if RedisBungee is loaded
+            return RedisBungeeAPI.getRedisBungeeApi() != null;
         } catch (ClassNotFoundException e) {
             return false;
         }

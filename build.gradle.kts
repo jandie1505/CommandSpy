@@ -23,7 +23,7 @@ dependencies {
     compileOnly("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
     annotationProcessor("com.velocitypowered:velocity-api:3.4.0-SNAPSHOT")
     compileOnly("com.github.ProxioDev.ValioBungee:RedisBungee-Velocity:0.12.3")
-    implementation("org.json:json:20250107")
+    implementation("org.json:json:20251224")
 }
 
 tasks {

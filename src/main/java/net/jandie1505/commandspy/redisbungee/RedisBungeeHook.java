@@ -8,6 +8,7 @@ import net.jandie1505.commandspy.data.SpyEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
+import org.jspecify.annotations.NonNull;
 
 @SuppressWarnings("ClassCanBeRecord")
 public class RedisBungeeHook {
@@ -37,12 +38,14 @@ public class RedisBungeeHook {
         RedisBungeeAPI.getRedisBungeeApi().sendChannelMessage("net-jandie1505-commandspy", event.serialize().toString());
     }
 
-    public CommandSpy getPlugin() {
+    public @NonNull CommandSpy getPlugin() {
         return plugin;
     }
 
     public static @Nullable String getProxyName() {
-        return RedisBungeeAPI.getRedisBungeeApi().getProxyId();
+        RedisBungeeAPI api = RedisBungeeAPI.getRedisBungeeApi();
+        if (api == null) return null;
+        return api.getProxyId();
     }
 
 }
